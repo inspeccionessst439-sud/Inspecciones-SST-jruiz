@@ -3,78 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SST Inspección Pro</title>
+    <title>SST Inspección Pro - V2</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background-color: #f0f2f5; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h2 { color: #1a73e8; margin-top: 0; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; }
-        #status { margin-top: 15px; font-size: 14px; text-align: center; color: #555; }
-        .offline { color: #d93025 !important; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background-color: #f0f2f5; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+        h2 { color: #1a73e8; margin-top: 0; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+        input, textarea, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        
+        .btn-primary { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .btn-danger { background: #d93025; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
+        .btn-nav { background: #5f6368; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; flex: 1; margin: 0 5px; }
+        
+        #status { margin-bottom: 15px; font-size: 14px; text-align: center; font-weight: bold; }
+        .offline { color: #d93025; }
+        .online { color: #1e8e3e; }
+
+        /* Estilos para la sección de revisión */
+        .revisor-container { margin-top: 30px; border-top: 2px dashed #ccc; padding-top: 20px; }
+        .nav-controls { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .registro-preview { background: #f8f9fa; padding: 10px; border-radius: 8px; font-size: 13px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Inspección Diaria</h2>
     <div id="status">Verificando conexión...</div>
+    <h2>Nueva Inspección</h2>
     
-    <label>Inspector</label>
-    <input type="text" id="inspector" placeholder="Tu nombre">
+    <label>Nombre del Inspector</label>
+    <input type="text" id="inspector" placeholder="Ej: Juan Pérez">
     
-    <label>Hallazgo / Observación</label>
-    <textarea id="hallazgo" rows="4" placeholder="Describe lo que viste..."></textarea>
+    <label>Tipo de Inspección</label>
+    <select id="tipo">
+        <option value="Epp">EPP</option>
+        <option value="Orden y limpieza">Orden y limpieza</option>
+        <option value="Refugio">Refugio</option>
+        <option value="Vehículos">Vehículos</option>
+    </select>
+    
+    <label>Descripción / Hallazgo</label>
+    <textarea id="hallazgo" rows="3" placeholder="Detalles de la observación..."></textarea>
     
     <label>Evidencia Fotográfica</label>
     <input type="file" id="foto" accept="image/*" capture="camera">
     
-    <button onclick="procesarGuardado()">GUARDAR INSPECCIÓN</button>
+    <button class="btn-primary" onclick="procesarGuardado()">GUARDAR REGISTRO</button>
+
+    <div class="revisor-container">
+        <h3>Pendientes por subir (<span id="count-pendientes">0</span>)</h3>
+        <div id="visor-vacio" style="text-align:center; color:#888;">No hay registros locales.</div>
+        
+        <div id="visor-controles" style="display:none;">
+            <div class="registro-preview" id="preview-box">
+                </div>
+            <div class="nav-controls" style="margin-top:10px;">
+                <button class="btn-nav" onclick="navegar(-1)">⬅️ Ant.</button>
+                <button class="btn-nav" onclick="navegar(1)">Sig. ➡️</button>
+            </div>
+            <button class="btn-danger" style="width:100%" onclick="eliminarActual()">ELIMINAR ESTE REGISTRO</button>
+        </div>
+    </div>
 </div>
 
 <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwFF08iT7xaYk9wyNuNtmhILKiPJmhU7NvRXjRyLZnCVgPmin_mKcVyhHaGxH1oyTv8/exec";
     let db;
+    let listaPendientes = [];
+    let indiceActual = 0;
 
-    // 1. INICIALIZAR BASE DE DATOS DEL CELULAR (IndexedDB)
+    // 1. INICIALIZAR BASE DE DATOS LOCAL
     const request = indexedDB.open("SST_Database", 1);
     request.onupgradeneeded = e => {
         db = e.target.result;
         db.createObjectStore("pendientes", { keyPath: "id", autoIncrement: true });
     };
-    request.onsuccess = e => { db = e.target.result; actualizarEstado(); };
+    request.onsuccess = e => { 
+        db = e.target.result; 
+        actualizarEstado(); 
+        cargarListaLocal();
+    };
 
-    // 2. DETECTAR SI HAY INTERNET
-    window.addEventListener('online',  actualizarEstado);
+    // 2. CONEXIÓN E INTERNET
+    window.addEventListener('online', actualizarEstado);
     window.addEventListener('offline', actualizarEstado);
 
     function actualizarEstado() {
         const statusDiv = document.getElementById('status');
         if (navigator.onLine) {
-            statusDiv.innerHTML = "✅ Conectado (Sincronizando...)";
-            statusDiv.classList.remove('offline');
+            statusDiv.innerHTML = "✅ Conectado - Sincronizando...";
+            statusDiv.className = "online";
             sincronizarDatos();
         } else {
-            statusDiv.innerHTML = "⚠️ Sin señal (Modo Offline activo)";
-            statusDiv.classList.add('offline');
+            statusDiv.innerHTML = "⚠️ Modo Offline - Sin señal";
+            statusDiv.className = "offline";
         }
     }
 
-    // 3. LÓGICA DE GUARDADO
+    // 3. GUARDAR NUEVO REGISTRO
     async function procesarGuardado() {
         const inspector = document.getElementById('inspector').value;
+        const tipo = document.getElementById('tipo').value;
         const hallazgo = document.getElementById('hallazgo').value;
         const fotoInput = document.getElementById('foto').files[0];
 
         if (!inspector || !hallazgo || !fotoInput) {
-            return alert("Por favor completa todos los campos y toma la foto.");
+            return alert("Por favor completa todos los campos.");
         }
 
         const fotoBase64 = await toBase64(fotoInput);
         const registro = {
-            fecha: new Date().toLocaleString(),
+            fecha: new Date().toLocaleString(), // Fecha y hora automática
             inspector,
+            tipo,
             hallazgo,
             foto: fotoBase64
         };
@@ -83,35 +124,81 @@
         tx.objectStore("pendientes").add(registro);
         
         tx.oncomplete = () => {
-            alert("Inspección guardada en el teléfono exitosamente.");
+            alert("Guardado en memoria del celular.");
             document.getElementById('hallazgo').value = "";
             document.getElementById('foto').value = "";
+            cargarListaLocal(); // Actualiza el visor
             if (navigator.onLine) sincronizarDatos();
         };
     }
 
-    // 4. LÓGICA DE SINCRONIZACIÓN AUTOMÁTICA
-    async function sincronizarDatos() {
-        const tx = db.transaction("pendientes", "readwrite");
+    // 4. LÓGICA DEL VISOR (Navegar y Eliminar)
+    async function cargarListaLocal() {
+        const tx = db.transaction("pendientes", "readonly");
         const store = tx.objectStore("pendientes");
-        const todos = await new Promise(res => {
+        listaPendientes = await new Promise(res => {
             store.getAll().onsuccess = e => res(e.target.result);
         });
 
-        for (let item of todos) {
+        document.getElementById('count-pendientes').innerText = listaPendientes.length;
+        
+        if (listaPendientes.length > 0) {
+            document.getElementById('visor-vacio').style.display = 'none';
+            document.getElementById('visor-controles').style.display = 'block';
+            mostrarRegistro(indiceActual);
+        } else {
+            document.getElementById('visor-vacio').style.display = 'block';
+            document.getElementById('visor-controles').style.display = 'none';
+        }
+    }
+
+    function mostrarRegistro(idx) {
+        if (idx < 0) indiceActual = listaPendientes.length - 1;
+        else if (idx >= listaPendientes.length) indiceActual = 0;
+        else indiceActual = idx;
+
+        const reg = listaPendientes[indiceActual];
+        document.getElementById('preview-box').innerHTML = `
+            <strong>Fecha:</strong> ${reg.fecha}<br>
+            <strong>Tipo:</strong> ${reg.tipo}<br>
+            <strong>Inspector:</strong> ${reg.inspector}<br>
+            <strong>Hallazgo:</strong> ${reg.hallazgo.substring(0, 50)}...
+        `;
+    }
+
+    function navegar(dir) {
+        mostrarRegistro(indiceActual + dir);
+    }
+
+    async function eliminarActual() {
+        if (!confirm("¿Eliminar esta inspección antes de subirla?")) return;
+        const id = listaPendientes[indiceActual].id;
+        const tx = db.transaction("pendientes", "readwrite");
+        tx.objectStore("pendientes").delete(id);
+        tx.oncomplete = () => {
+            indiceActual = 0;
+            cargarListaLocal();
+        };
+    }
+
+    // 5. SINCRONIZACIÓN AUTOMÁTICA
+    async function sincronizarDatos() {
+        if (listaPendientes.length === 0) return;
+
+        for (let item of listaPendientes) {
             try {
-                const response = await fetch(APPS_SCRIPT_URL, {
+                await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Importante para evitar bloqueos de Google
+                    mode: 'no-cors',
                     body: JSON.stringify(item)
                 });
-                // Si se envía, lo borramos de la memoria del celular
-                db.transaction("pendientes", "readwrite").objectStore("pendientes").delete(item.id);
-                console.log("Registro sincronizado e ID borrado:", item.id);
+                const tx = db.transaction("pendientes", "readwrite");
+                tx.objectStore("pendientes").delete(item.id);
             } catch (err) {
-                console.log("Fallo envío, se queda en el cel:", err);
+                console.log("Error de red, se reintentará luego.");
             }
         }
+        cargarListaLocal();
     }
 
     const toBase64 = file => new Promise((res, rej) => {
