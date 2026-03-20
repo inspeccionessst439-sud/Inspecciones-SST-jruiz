@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SST Inspección Pro</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background-color: #f0f2f5; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #1a73e8; margin-top: 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        #status { margin-top: 15px; font-size: 14px; text-align: center; color: #555; }
+        .offline { color: #d93025 !important; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Inspección Diaria</h2>
+    <div id="status">Verificando conexión...</div>
+    
+    <label>Inspector</label>
+    <input type="text" id="inspector" placeholder="Tu nombre">
+    
+    <label>Hallazgo / Observación</label>
+    <textarea id="hallazgo" rows="4" placeholder="Describe lo que viste..."></textarea>
+    
+    <label>Evidencia Fotográfica</label>
+    <input type="file" id="foto" accept="image/*" capture="camera">
+    
+    <button onclick="procesarGuardado()">GUARDAR INSPECCIÓN</button>
+</div>
+
+<script>
+    const APPS_SCRIPT_URL = "TU_URL_DE_APPS_SCRIPT";
+    let db;
+
+    // 1. INICIALIZAR BASE DE DATOS DEL CELULAR (IndexedDB)
+    const request = indexedDB.open("SST_Database", 1);
+    request.onupgradeneeded = e => {
+        db = e.target.result;
+        db.createObjectStore("pendientes", { keyPath: "id", autoIncrement: true });
+    };
+    request.onsuccess = e => { db = e.target.result; actualizarEstado(); };
+
+    // 2. DETECTAR SI HAY INTERNET
+    window.addEventListener('online',  actualizarEstado);
+    window.addEventListener('offline', actualizarEstado);
+
+    function actualizarEstado() {
+        const statusDiv = document.getElementById('status');
+        if (navigator.onLine) {
+            statusDiv.innerHTML = "✅ Conectado (Sincronizando...)";
+            statusDiv.classList.remove('offline');
+            sincronizarDatos();
+        } else {
+            statusDiv.innerHTML = "⚠️ Sin señal (Modo Offline activo)";
+            statusDiv.classList.add('offline');
+        }
+    }
+
+    // 3. LÓGICA DE GUARDADO
+    async function procesarGuardado() {
+        const inspector = document.getElementById('inspector').value;
+        const hallazgo = document.getElementById('hallazgo').value;
+        const fotoInput = document.getElementById('foto').files[0];
+
+        if (!inspector || !hallazgo || !fotoInput) {
+            return alert("Por favor completa todos los campos y toma la foto.");
+        }
+
+        const fotoBase64 = await toBase64(fotoInput);
+        const registro = {
+            fecha: new Date().toLocaleString(),
+            inspector,
+            hallazgo,
+            foto: fotoBase64
+        };
+
+        const tx = db.transaction("pendientes", "readwrite");
+        tx.objectStore("pendientes").add(registro);
+        
+        tx.oncomplete = () => {
+            alert("Inspección guardada en el teléfono exitosamente.");
+            document.getElementById('hallazgo').value = "";
+            document.getElementById('foto').value = "";
+            if (navigator.onLine) sincronizarDatos();
+        };
+    }
+
+    // 4. LÓGICA DE SINCRONIZACIÓN AUTOMÁTICA
+    async function sincronizarDatos() {
+        const tx = db.transaction("pendientes", "readwrite");
+        const store = tx.objectStore("pendientes");
+        const todos = await new Promise(res => {
+            store.getAll().onsuccess = e => res(e.target.result);
+        });
+
+        for (let item of todos) {
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Importante para evitar bloqueos de Google
+                    body: JSON.stringify(item)
+                });
+                // Si se envía, lo borramos de la memoria del celular
+                db.transaction("pendientes", "readwrite").objectStore("pendientes").delete(item.id);
+                console.log("Registro sincronizado e ID borrado:", item.id);
+            } catch (err) {
+                console.log("Fallo envío, se queda en el cel:", err);
+            }
+        }
+    }
+
+    const toBase64 = file => new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => res(reader.result.split(',')[1]);
+        reader.onerror = rej;
+    });
+</script>
+
+</body>
+</html>
