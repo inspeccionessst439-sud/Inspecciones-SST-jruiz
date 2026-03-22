@@ -2,125 +2,250 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SST Inspección Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SST Sistema Integral</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background-color: #f0f2f5; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h2 { color: #1a73e8; margin-top: 0; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; }
-        #status { margin-top: 15px; font-size: 14px; text-align: center; color: #555; }
-        .offline { color: #d93025 !important; }
+        :root {
+            --primary: #003366;    /* Azul Institucional */
+            --accent: #ffcc00;     /* Amarillo de Seguridad */
+            --success: #28a745;    /* Verde (Capacitaciones) */
+            --info: #17a2b8;       /* Cian (Charlas) */
+            --secondary: #6c757d;  /* Gris (Botón volver) */
+            --bg: #f4f7f6;
+        }
+
+        body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: var(--bg); }
+        
+        .app-container { width: 100%; max-width: 600px; margin: auto; padding: 15px; box-sizing: border-box; }
+
+        /* Barra de Estado */
+        #status { font-size: 11px; text-align: center; font-weight: bold; padding: 10px; border-radius: 10px; margin-bottom: 15px; text-transform: uppercase; }
+        .offline { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .online { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+
+        /* DASHBOARD - MENU PRINCIPAL */
+        #view-menu h1 { color: var(--primary); text-align: center; font-size: 1.6rem; margin-bottom: 25px; }
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        .menu-btn { 
+            background: white; border-radius: 20px; padding: 30px 15px; text-align: center; 
+            box-shadow: 0 6px 12px rgba(0,0,0,0.08); border: none; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+            transition: all 0.3s ease; border-bottom: 5px solid transparent;
+        }
+        .menu-btn:active { transform: translateY(4px); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        /* Colores por botón */
+        .btn-inspecciones { border-color: var(--primary); }
+        .btn-capacitaciones { border-color: var(--success); }
+        .btn-charlas { border-color: var(--info); }
+        .btn-opt { border-color: var(--accent); }
+
+        .menu-btn i { font-size: 45px; }
+        .menu-btn span { font-weight: bold; color: #333; font-size: 14px; }
+
+        /* VISTAS DE FORMULARIOS */
+        .view { display: none; }
+        .active-view { display: block; animation: fadeIn 0.4s; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+
+        /* Estilos de Input */
+        label { display: block; margin-bottom: 6px; font-weight: 700; color: var(--primary); font-size: 13px; }
+        input, textarea, select { width: 100%; padding: 12px; margin-bottom: 18px; border: 2px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 16px; transition: border 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; }
+
+        .btn-main { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; color: white; margin-bottom: 10px; }
+        .btn-save { background: var(--primary); }
+        .btn-back { background: var(--secondary); margin-bottom: 15px; padding: 10px; font-size: 14px; }
+
+        /* Panel de Revisión Mini */
+        .review-box { margin-top: 25px; background: #fdfdfd; border: 1.5px solid #ddd; padding: 15px; border-radius: 15px; }
+        .nav-group { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-nav { flex: 1; padding: 12px; background: #eee; color: #333; border: none; border-radius: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Inspección Diaria</h2>
+<div class="app-container">
     <div id="status">Verificando conexión...</div>
-    
-    <label>Inspector</label>
-    <input type="text" id="inspector" placeholder="Tu nombre">
-    
-    <label>Hallazgo / Observación</label>
-    <textarea id="hallazgo" rows="4" placeholder="Describe lo que viste..."></textarea>
-    
-    <label>Evidencia Fotográfica</label>
-    <input type="file" id="foto" accept="image/*" capture="camera">
-    
-    <button onclick="procesarGuardado()">GUARDAR INSPECCIÓN</button>
+
+    <div id="view-menu" class="view active-view">
+        <h1>Panel de Gestión SST</h1>
+        <div class="menu-grid">
+            <button class="menu-btn btn-inspecciones" onclick="mostrarVista('view-inspecciones')">
+                <i>📝</i><span>Inspecciones</span>
+            </button>
+            <button class="menu-btn btn-capacitaciones" onclick="alert('Módulo de Capacitaciones en desarrollo')">
+                <i>🎓</i><span>Capacitaciones</span>
+            </button>
+            <button class="menu-btn btn-charlas" onclick="alert('Módulo de Charlas en desarrollo')">
+                <i>📢</i><span>Charlas 5 min</span>
+            </button>
+            <button class="menu-btn btn-opt" onclick="alert('Módulo OPT en desarrollo')">
+                <i>👁️</i><span>OPT</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="view-inspecciones" class="view">
+        <button class="btn-main btn-back" onclick="mostrarVista('view-menu')">⬅ Volver al Menú</button>
+        
+        <div class="card">
+            <h2>Inspección Diaria</h2>
+            <label>Inspector</label>
+            <input type="text" id="inspector" placeholder="Nombre completo">
+
+            <label>Tipo de Inspección</label>
+            <select id="tipo">
+                <option value="Orden y limpieza">Orden y limpieza</option>
+                <option value="Locativa">Locativa</option>
+                <option value="Epp">Epp</option>
+                <option value="Vehículos">Vehículos</option>
+                <option value="Refugio Minero">Refugio Minero</option>
+            </select>
+
+            <label>Lugar / Nivel</label>
+            <input type="text" id="lugar" placeholder="Ubicación">
+
+            <label>Nivel de Riesgo</label>
+            <select id="riesgo">
+                <option value="Bajo">Bajo (Verde)</option>
+                <option value="Medio">Medio (Amarillo)</option>
+                <option value="Alto">Alto (Rojo)</option>
+            </select>
+            
+            <label>Hallazgo / Observación</label>
+            <textarea id="hallazgo" rows="3" placeholder="Detalle lo observado..."></textarea>
+            
+            <label>Evidencia Fotográfica</label>
+            <input type="file" id="foto" accept="image/*" capture="camera">
+            
+            <button class="btn-main btn-save" onclick="procesarGuardado()">💾 GUARDAR REPORTE</button>
+        </div>
+
+        <div class="review-box" id="panel-revision" style="display:none;">
+            <p style="text-align:center; font-weight:bold; font-size:13px;">Registros pendientes por sincronizar: <span id="count">0</span></p>
+            <div id="visor" style="font-size:13px; background:#fff; padding:10px; border-radius:10px; margin-top:10px; border:1px solid #eee;"></div>
+            <div class="nav-group">
+                <button class="btn-nav" onclick="cambiarRegistro(-1)">⬅ Atrás</button>
+                <button class="btn-nav" onclick="cambiarRegistro(1)">Sig ➡</button>
+            </div>
+            <button onclick="borrarRegistro()" style="width:100%; padding:10px; background:none; color:red; border:none; font-size:12px; margin-top:10px;">🗑 Eliminar este registro</button>
+        </div>
+    </div>
 </div>
 
 <script>
-    const APPS_SCRIPT_URL = "TU_URL_DE_APPS_SCRIPT";
+    // URL DE TU APPS SCRIPT (CEREBRO)
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwFF08iT7xaYk9wyNuNtmhILKiPJmhU7NvRXjRyLZnCVgPmin_mKcVyhHaGxH1oyTv8/exec";
+    
     let db;
+    let listaLocal = [];
+    let pos = 0;
 
-    // 1. INICIALIZAR BASE DE DATOS DEL CELULAR (IndexedDB)
-    const request = indexedDB.open("SST_Database", 1);
+    // Navegación de Vistas
+    function mostrarVista(id) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
+        document.getElementById(id).classList.add('active-view');
+        window.scrollTo(0,0);
+    }
+
+    // Base de Datos IndexedDB
+    const request = indexedDB.open("SST_Pro_DB", 1);
     request.onupgradeneeded = e => {
         db = e.target.result;
         db.createObjectStore("pendientes", { keyPath: "id", autoIncrement: true });
     };
-    request.onsuccess = e => { db = e.target.result; actualizarEstado(); };
-
-    // 2. DETECTAR SI HAY INTERNET
-    window.addEventListener('online',  actualizarEstado);
-    window.addEventListener('offline', actualizarEstado);
+    request.onsuccess = e => { db = e.target.result; actualizarEstado(); cargarDatosLocales(); };
 
     function actualizarEstado() {
-        const statusDiv = document.getElementById('status');
-        if (navigator.onLine) {
-            statusDiv.innerHTML = "✅ Conectado (Sincronizando...)";
-            statusDiv.classList.remove('offline');
-            sincronizarDatos();
-        } else {
-            statusDiv.innerHTML = "⚠️ Sin señal (Modo Offline activo)";
-            statusDiv.classList.add('offline');
-        }
+        const s = document.getElementById('status');
+        const online = navigator.onLine;
+        s.innerHTML = online ? "● Conectado - Sincronización Lista" : "● Offline - Guardado Local";
+        s.className = online ? "online" : "offline";
+        if(online) sincronizar();
     }
 
-    // 3. LÓGICA DE GUARDADO
+    window.addEventListener('online', actualizarEstado);
+    window.addEventListener('offline', actualizarEstado);
+
+    // Lógica de Guardado
     async function procesarGuardado() {
         const inspector = document.getElementById('inspector').value;
+        const tipo = document.getElementById('tipo').value;
+        const lugar = document.getElementById('lugar').value;
+        const riesgo = document.getElementById('riesgo').value;
         const hallazgo = document.getElementById('hallazgo').value;
-        const fotoInput = document.getElementById('foto').files[0];
+        const foto = document.getElementById('foto').files[0];
 
-        if (!inspector || !hallazgo || !fotoInput) {
-            return alert("Por favor completa todos los campos y toma la foto.");
-        }
+        if (!inspector || !hallazgo || !foto) return alert("Por favor complete todos los datos y tome la foto.");
 
-        const fotoBase64 = await toBase64(fotoInput);
         const registro = {
             fecha: new Date().toLocaleString(),
-            inspector,
-            hallazgo,
-            foto: fotoBase64
+            inspector, tipo, lugar, riesgo, hallazgo,
+            foto: await toBase64(foto)
         };
 
         const tx = db.transaction("pendientes", "readwrite");
         tx.objectStore("pendientes").add(registro);
-        
         tx.oncomplete = () => {
-            alert("Inspección guardada en el teléfono exitosamente.");
+            alert("¡Inspección guardada con éxito!");
             document.getElementById('hallazgo').value = "";
             document.getElementById('foto').value = "";
-            if (navigator.onLine) sincronizarDatos();
+            cargarDatosLocales();
+            if(navigator.onLine) sincronizar();
         };
     }
 
-    // 4. LÓGICA DE SINCRONIZACIÓN AUTOMÁTICA
-    async function sincronizarDatos() {
-        const tx = db.transaction("pendientes", "readwrite");
-        const store = tx.objectStore("pendientes");
-        const todos = await new Promise(res => {
-            store.getAll().onsuccess = e => res(e.target.result);
+    async function cargarDatosLocales() {
+        const tx = db.transaction("pendientes", "readonly");
+        listaLocal = await new Promise(res => {
+            tx.objectStore("pendientes").getAll().onsuccess = e => res(e.target.result);
         });
-
-        for (let item of todos) {
-            try {
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // Importante para evitar bloqueos de Google
-                    body: JSON.stringify(item)
-                });
-                // Si se envía, lo borramos de la memoria del celular
-                db.transaction("pendientes", "readwrite").objectStore("pendientes").delete(item.id);
-                console.log("Registro sincronizado e ID borrado:", item.id);
-            } catch (err) {
-                console.log("Fallo envío, se queda en el cel:", err);
-            }
-        }
+        const panel = document.getElementById('panel-revision');
+        if (listaLocal.length > 0) {
+            panel.style.display = 'block';
+            document.getElementById('count').innerText = listaLocal.length;
+            mostrarEnVisor();
+        } else { panel.style.display = 'none'; }
     }
 
-    const toBase64 = file => new Promise((res, rej) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => res(reader.result.split(',')[1]);
-        reader.onerror = rej;
+    function mostrarEnVisor() {
+        if (pos >= listaLocal.length) pos = 0;
+        if (pos < 0) pos = listaLocal.length - 1;
+        const r = listaLocal[pos];
+        document.getElementById('visor').innerHTML = `<b>📅 ${r.fecha}</b><br><b>📍 ${r.lugar}</b><br>Hallazgo: ${r.hallazgo.substring(0,50)}...`;
+    }
+
+    function cambiarRegistro(dir) { pos += dir; mostrarEnVisor(); }
+
+    function borrarRegistro() {
+        if (!confirm("¿Eliminar este registro local?")) return;
+        const tx = db.transaction("pendientes", "readwrite");
+        tx.objectStore("pendientes").delete(listaLocal[pos].id);
+        tx.oncomplete = () => { pos = 0; cargarDatosLocales(); };
+    }
+
+    async function sincronizar() {
+        if (listaLocal.length === 0) return;
+        for (let item of listaLocal) {
+            try {
+                await fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(item) });
+                db.transaction("pendientes", "readwrite").objectStore("pendientes").delete(item.id);
+            } catch (e) { console.log("Reintentando sincronización..."); }
+        }
+        cargarDatosLocales();
+    }
+
+    const toBase64 = f => new Promise((res, rej) => {
+        const r = new FileReader();
+        r.readAsDataURL(f);
+        r.onload = () => res(r.result.split(',')[1]);
+        r.onerror = rej;
     });
 </script>
-
 </body>
 </html>
