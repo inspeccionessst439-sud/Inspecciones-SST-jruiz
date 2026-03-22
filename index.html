@@ -12,10 +12,10 @@
             --info: #17a2b8;       /* Cian (Charlas) */
             --secondary: #6c757d;  /* Gris (Botón volver) */
             --bg: #f4f7f6;
+            --danger: #d93025;     /* Rojo Eliminar */
         }
 
         body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: var(--bg); }
-        
         .app-container { width: 100%; max-width: 600px; margin: auto; padding: 15px; box-sizing: border-box; }
 
         /* Barra de Estado */
@@ -26,45 +26,54 @@
         /* DASHBOARD - MENU PRINCIPAL */
         #view-menu h1 { color: var(--primary); text-align: center; font-size: 1.6rem; margin-bottom: 25px; }
         .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        
         .menu-btn { 
             background: white; border-radius: 20px; padding: 30px 15px; text-align: center; 
             box-shadow: 0 6px 12px rgba(0,0,0,0.08); border: none; cursor: pointer;
             display: flex; flex-direction: column; align-items: center; gap: 12px;
             transition: all 0.3s ease; border-bottom: 5px solid transparent;
         }
-        .menu-btn:active { transform: translateY(4px); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
-        /* Colores por botón */
         .btn-inspecciones { border-color: var(--primary); }
         .btn-capacitaciones { border-color: var(--success); }
         .btn-charlas { border-color: var(--info); }
         .btn-opt { border-color: var(--accent); }
-
         .menu-btn i { font-size: 45px; }
         .menu-btn span { font-weight: bold; color: #333; font-size: 14px; }
 
-        /* VISTAS DE FORMULARIOS */
+        /* VISTAS */
         .view { display: none; }
         .active-view { display: block; animation: fadeIn 0.4s; }
-
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-
-        /* Estilos de Input */
         label { display: block; margin-bottom: 6px; font-weight: 700; color: var(--primary); font-size: 13px; }
         input, textarea, select { width: 100%; padding: 12px; margin-bottom: 18px; border: 2px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 16px; transition: border 0.3s; }
-        input:focus { border-color: var(--primary); outline: none; }
+        
+        /* SELECTOR DE RIESGO COLOREADO */
+        .riesgo-selector { display: flex; gap: 10px; margin-bottom: 18px; }
+        .riesgo-opt { 
+            flex: 1; padding: 15px 5px; border-radius: 12px; text-align: center; 
+            color: white; font-weight: bold; font-size: 12px; cursor: pointer;
+            opacity: 0.4; transition: all 0.3s; border: 3px solid transparent;
+        }
+        .riesgo-opt.selected { opacity: 1; border-color: var(--primary); transform: scale(1.05); }
+        .r-bajo { background-color: var(--success); }
+        .r-medio { background-color: var(--accent); color: #333; }
+        .r-alto { background-color: var(--danger); }
 
+        /* Botones */
         .btn-main { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; color: white; margin-bottom: 10px; }
         .btn-save { background: var(--primary); }
+        .btn-new { background: var(--success); margin-bottom: 15px; }
         .btn-back { background: var(--secondary); margin-bottom: 15px; padding: 10px; font-size: 14px; }
 
-        /* Panel de Revisión Mini */
-        .review-box { margin-top: 25px; background: #fdfdfd; border: 1.5px solid #ddd; padding: 15px; border-radius: 15px; }
-        .nav-group { display: flex; gap: 8px; margin-top: 10px; }
-        .btn-nav { flex: 1; padding: 12px; background: #eee; color: #333; border: none; border-radius: 10px; font-weight: bold; }
+        /* Panel de Revisión / Navegación */
+        .review-box { margin-top: 25px; background: #fff; border: 2px solid var(--primary); padding: 15px; border-radius: 15px; }
+        .nav-group { display: flex; gap: 8px; margin: 10px 0; }
+        .btn-nav { flex: 1; padding: 12px; background: var(--secondary); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .btn-edit-rec { width: 100%; background: var(--accent); color: #000; padding: 12px; border: none; border-radius: 10px; font-weight: bold; margin-bottom: 8px; cursor: pointer; }
+        .btn-del-rec { width: 100%; background: none; color: var(--danger); border: none; font-weight: bold; cursor: pointer; font-size: 13px; }
+        
+        .visor-data { background: #f9f9f9; padding: 12px; border-radius: 10px; border: 1px solid #eee; font-size: 13px; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -94,7 +103,11 @@
         <button class="btn-main btn-back" onclick="mostrarVista('view-menu')">⬅ Volver al Menú</button>
         
         <div class="card">
-            <h2>Inspección Diaria</h2>
+            <h2 id="form-title" style="margin-top:0; color:var(--primary); text-align:center;">Nueva Inspección</h2>
+            <input type="hidden" id="edit-id">
+
+            <button class="btn-main btn-new" onclick="botonNuevo()">➕ NUEVO REGISTRO</button>
+
             <label>Inspector</label>
             <input type="text" id="inspector" placeholder="Nombre completo">
 
@@ -111,49 +124,46 @@
             <input type="text" id="lugar" placeholder="Ubicación">
 
             <label>Nivel de Riesgo</label>
-            <select id="riesgo">
-                <option value="Bajo">Bajo (Verde)</option>
-                <option value="Medio">Medio (Amarillo)</option>
-                <option value="Alto">Alto (Rojo)</option>
-            </select>
+            <div class="riesgo-selector">
+                <div class="riesgo-opt r-bajo selected" id="opt-Bajo" onclick="setRiesgo('Bajo')">BAJO</div>
+                <div class="riesgo-opt r-medio" id="opt-Medio" onclick="setRiesgo('Medio')">MEDIO</div>
+                <div class="riesgo-opt r-alto" id="opt-Alto" onclick="setRiesgo('Alto')">ALTO</div>
+            </div>
+            <input type="hidden" id="riesgo" value="Bajo">
             
             <label>Hallazgo / Observación</label>
             <textarea id="hallazgo" rows="3" placeholder="Detalle lo observado..."></textarea>
             
-            <label>Evidencia Fotográfica</label>
+            <label id="label-foto">Foto Evidencia</label>
             <input type="file" id="foto" accept="image/*" capture="camera">
             
-            <button class="btn-main btn-save" onclick="procesarGuardado()">💾 GUARDAR REPORTE</button>
+            <button class="btn-main btn-save" id="btn-save" onclick="procesarGuardado()">💾 GUARDAR EN TELÉFONO</button>
         </div>
 
         <div class="review-box" id="panel-revision" style="display:none;">
-            <p style="text-align:center; font-weight:bold; font-size:13px;">Registros pendientes por sincronizar: <span id="count">0</span></p>
-            <div id="visor" style="font-size:13px; background:#fff; padding:10px; border-radius:10px; margin-top:10px; border:1px solid #eee;"></div>
+            <p style="text-align:center; font-weight:bold; font-size:14px; margin-bottom:10px;">
+                Pendientes por sincronizar: <span id="count">0</span>
+            </p>
+            
             <div class="nav-group">
-                <button class="btn-nav" onclick="cambiarRegistro(-1)">⬅ Atrás</button>
-                <button class="btn-nav" onclick="cambiarRegistro(1)">Sig ➡</button>
+                <button class="btn-nav" onclick="cambiarRegistro(-1)">⬅ ATRÁS</button>
+                <button class="btn-nav" onclick="cambiarRegistro(1)">SIG ➡</button>
             </div>
-            <button onclick="borrarRegistro()" style="width:100%; padding:10px; background:none; color:red; border:none; font-size:12px; margin-top:10px;">🗑 Eliminar este registro</button>
+
+            <div class="visor-data" id="visor"></div>
+
+            <div style="margin-top:12px;">
+                <button class="btn-edit-rec" onclick="cargarParaEditar()">✏️ EDITAR ESTE REGISTRO</button>
+                <button class="btn-del-rec" onclick="borrarRegistro()">🗑️ ELIMINAR REGISTRO</button>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    // URL DE TU APPS SCRIPT (CEREBRO)
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwFF08iT7xaYk9wyNuNtmhILKiPJmhU7NvRXjRyLZnCVgPmin_mKcVyhHaGxH1oyTv8/exec";
-    
-    let db;
-    let listaLocal = [];
-    let pos = 0;
+    let db, listaLocal = [], pos = 0;
 
-    // Navegación de Vistas
-    function mostrarVista(id) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
-        document.getElementById(id).classList.add('active-view');
-        window.scrollTo(0,0);
-    }
-
-    // Base de Datos IndexedDB
     const request = indexedDB.open("SST_Pro_DB", 1);
     request.onupgradeneeded = e => {
         db = e.target.result;
@@ -161,43 +171,89 @@
     };
     request.onsuccess = e => { db = e.target.result; actualizarEstado(); cargarDatosLocales(); };
 
-    function actualizarEstado() {
-        const s = document.getElementById('status');
-        const online = navigator.onLine;
-        s.innerHTML = online ? "● Conectado - Sincronización Lista" : "● Offline - Guardado Local";
-        s.className = online ? "online" : "offline";
-        if(online) sincronizar();
+    function setRiesgo(val) {
+        document.getElementById('riesgo').value = val;
+        document.querySelectorAll('.riesgo-opt').forEach(opt => opt.classList.remove('selected'));
+        document.getElementById('opt-' + val).classList.add('selected');
     }
 
-    window.addEventListener('online', actualizarEstado);
-    window.addEventListener('offline', actualizarEstado);
+    function mostrarVista(id) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
+        document.getElementById(id).classList.add('active-view');
+        window.scrollTo(0,0);
+    }
 
-    // Lógica de Guardado
+    function botonNuevo() {
+        if(confirm("¿Deseas limpiar el formulario para una nueva inspección?")) {
+            limpiarFormulario();
+        }
+    }
+
+    function limpiarFormulario() {
+        document.getElementById('edit-id').value = "";
+        document.getElementById('lugar').value = "";
+        document.getElementById('hallazgo').value = "";
+        document.getElementById('foto').value = "";
+        setRiesgo('Bajo');
+        document.getElementById('form-title').innerText = "Nueva Inspección";
+        document.getElementById('btn-save').innerText = "💾 GUARDAR EN TELÉFONO";
+        document.getElementById('label-foto').innerText = "Foto Evidencia";
+    }
+
     async function procesarGuardado() {
         const inspector = document.getElementById('inspector').value;
         const tipo = document.getElementById('tipo').value;
         const lugar = document.getElementById('lugar').value;
         const riesgo = document.getElementById('riesgo').value;
         const hallazgo = document.getElementById('hallazgo').value;
-        const foto = document.getElementById('foto').files[0];
+        const fotoInput = document.getElementById('foto').files[0];
+        const editId = document.getElementById('edit-id').value;
 
-        if (!inspector || !hallazgo || !foto) return alert("Por favor complete todos los datos y tome la foto.");
+        if (!inspector || !hallazgo) return alert("Complete los campos obligatorios.");
+        if (!fotoInput && !editId) return alert("Debe tomar una foto.");
 
-        const registro = {
+        let registro = {
             fecha: new Date().toLocaleString(),
-            inspector, tipo, lugar, riesgo, hallazgo,
-            foto: await toBase64(foto)
+            inspector, tipo, lugar, riesgo, hallazgo
         };
 
+        if (fotoInput) {
+            registro.foto = await toBase64(fotoInput);
+        } else {
+            registro.foto = listaLocal[pos].foto;
+        }
+
         const tx = db.transaction("pendientes", "readwrite");
-        tx.objectStore("pendientes").add(registro);
+        const store = tx.objectStore("pendientes");
+
+        if (editId) {
+            registro.id = parseInt(editId);
+            store.put(registro);
+        } else {
+            store.add(registro);
+        }
+
         tx.oncomplete = () => {
-            alert("¡Inspección guardada con éxito!");
-            document.getElementById('hallazgo').value = "";
-            document.getElementById('foto').value = "";
+            alert(editId ? "Registro actualizado." : "¡Guardado con éxito!");
+            limpiarFormulario();
             cargarDatosLocales();
             if(navigator.onLine) sincronizar();
         };
+    }
+
+    function cargarParaEditar() {
+        const r = listaLocal[pos];
+        document.getElementById('edit-id').value = r.id;
+        document.getElementById('inspector').value = r.inspector;
+        document.getElementById('tipo').value = r.tipo;
+        document.getElementById('lugar').value = r.lugar;
+        setRiesgo(r.riesgo);
+        document.getElementById('hallazgo').value = r.hallazgo;
+        
+        document.getElementById('form-title').innerText = "✏️ Editando Registro";
+        document.getElementById('btn-save').innerText = "🔄 ACTUALIZAR CAMBIOS";
+        document.getElementById('label-foto').innerText = "Foto (Opcional si no cambia)";
+        window.scrollTo(0,0);
     }
 
     async function cargarDatosLocales() {
@@ -217,17 +273,32 @@
         if (pos >= listaLocal.length) pos = 0;
         if (pos < 0) pos = listaLocal.length - 1;
         const r = listaLocal[pos];
-        document.getElementById('visor').innerHTML = `<b>📅 ${r.fecha}</b><br><b>📍 ${r.lugar}</b><br>Hallazgo: ${r.hallazgo.substring(0,50)}...`;
+        document.getElementById('visor').innerHTML = `
+            <strong>📅 Fecha:</strong> ${r.fecha}<br>
+            <strong>📍 Lugar:</strong> ${r.lugar || 'N/A'}<br>
+            <strong>⚠️ Riesgo:</strong> ${r.riesgo}<br>
+            <strong>📝 Hallazgo:</strong> ${r.hallazgo.substring(0,60)}...
+        `;
     }
 
     function cambiarRegistro(dir) { pos += dir; mostrarEnVisor(); }
 
     function borrarRegistro() {
-        if (!confirm("¿Eliminar este registro local?")) return;
+        if (!confirm("¿Eliminar este registro permanentemente del teléfono?")) return;
         const tx = db.transaction("pendientes", "readwrite");
         tx.objectStore("pendientes").delete(listaLocal[pos].id);
         tx.oncomplete = () => { pos = 0; cargarDatosLocales(); };
     }
+
+    function actualizarEstado() {
+        const s = document.getElementById('status');
+        const online = navigator.onLine;
+        s.className = online ? "online" : "offline";
+        s.innerHTML = online ? "● Conectado - Sincronizando" : "● Offline - Revisión Local";
+        if(online) sincronizar();
+    }
+    window.addEventListener('online', actualizarEstado);
+    window.addEventListener('offline', actualizarEstado);
 
     async function sincronizar() {
         if (listaLocal.length === 0) return;
@@ -235,7 +306,7 @@
             try {
                 await fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(item) });
                 db.transaction("pendientes", "readwrite").objectStore("pendientes").delete(item.id);
-            } catch (e) { console.log("Reintentando sincronización..."); }
+            } catch (e) { }
         }
         cargarDatosLocales();
     }
