@@ -16,17 +16,14 @@
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); user-select: none; }
         .app-container { width: 100%; max-width: 600px; margin: auto; padding: 15px; box-sizing: border-box; }
 
-        /* Estado de Conexión */
         #status { font-size: 11px; text-align: center; font-weight: bold; padding: 10px; border-radius: 10px; margin-bottom: 15px; text-transform: uppercase; }
         .offline { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .online { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
 
-        /* Título Animado */
         .marquee-container { width: 100%; overflow: hidden; white-space: nowrap; margin-bottom: 20px; }
         .marquee-container h1 { display: inline-block; color: var(--primary); padding-left: 100%; animation: desplazar 15s linear infinite; font-size: 1.4rem; }
         @keyframes desplazar { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
 
-        /* Grid de Menú */
         .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .menu-btn { 
             background: white; border-radius: 15px; padding: 20px 10px; text-align: center; 
@@ -44,25 +41,23 @@
         .menu-btn i { font-size: 30px; }
         .menu-btn span { font-weight: bold; font-size: 11px; color: #333; }
 
-        /* Vistas */
         .view { display: none; }
         .active-view { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* Formulario */
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--primary); font-size: 12px; }
         input, select, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 15px; }
         
-        /* Selectores de Riesgo */
-        .riesgo-selector { display: flex; gap: 8px; margin-bottom: 15px; }
-        .riesgo-opt { flex: 1; padding: 10px; border-radius: 8px; text-align: center; color: white; font-weight: bold; font-size: 10px; opacity: 0.3; cursor: pointer; }
-        .riesgo-opt.selected { opacity: 1; transform: scale(1.05); border: 2px solid var(--primary); }
-        .r-bajo { background: var(--success); }
-        .r-medio { background: var(--accent); color: #333; }
-        .r-alto { background: var(--danger); }
+        .riesgo-selector, .estado-selector, .diligenciado-selector { display: flex; gap: 8px; margin-bottom: 15px; }
+        .riesgo-opt, .estado-opt, .dil-opt { flex: 1; padding: 10px; border-radius: 8px; text-align: center; color: white; font-weight: bold; font-size: 10px; opacity: 0.3; cursor: pointer; }
+        .riesgo-opt.selected, .estado-opt.selected, .dil-opt.selected { opacity: 1; transform: scale(1.05); border: 2px solid var(--primary); }
+        
+        .r-bajo, .est-bueno, .dil-completo { background: var(--success); }
+        .r-medio, .est-regular, .dil-parcial { background: var(--accent); color: #333; }
+        .r-alto, .est-malo, .dil-vacio { background: var(--danger); }
+        .est-cambio { background: var(--orange); }
 
-        /* Botones de Acción */
         .btn-main { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; color: white; margin-bottom: 10px; }
         .btn-save { background: var(--primary); }
         .btn-back { background: var(--secondary); font-size: 12px; }
@@ -71,7 +66,13 @@
         .btn-nav { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: #e0e0e0; }
         .btn-new-reg { flex: 2; background: var(--success); color: white; }
 
-        #sync-count { background: var(--danger); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; }
+        .badge-count { background: var(--danger); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; }
+        .preview-galeria { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; }
+        .preview-galeria img { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; border: 1px solid #ddd; }
+
+        .gas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .gas-field label { font-size: 10px; margin-bottom: 2px; }
+        .gas-field input { margin-bottom: 5px; padding: 8px; }
     </style>
 </head>
 <body>
@@ -83,29 +84,86 @@
         <div class="marquee-container"><h1>SST Sistema Integral </h1></div>
         <div class="menu-grid">
             <button class="menu-btn btn-inspecciones" onclick="mostrarVista('view-inspecciones')">
-                <i>📝</i><span>Inspecciones <b id="sync-count">0</b></span>
+                <i>📝</i><span>Inspecciones <b id="sync-count" class="badge-count">0</b></span>
             </button>
-            <button class="menu-btn btn-inventario" onclick="alert('Módulo Offline próximamente')">
-                <i>📦</i><span>Inventario</span>
+            <button class="menu-btn btn-inventario" onclick="mostrarVista('view-inventario')">
+                <i>📦</i><span>Inventario <b id="inv-count" class="badge-count">0</b></span>
             </button>
-            <button class="menu-btn btn-icai" onclick="alert('Módulo Offline próximamente')">
-                <i>📊</i><span>ICAI</span>
+            <button class="menu-btn btn-icai" onclick="alert('Próximamente')"><i>📊</i><span>ICAI</span></button>
+            <button class="menu-btn btn-operacional" onclick="mostrarVista('view-control-atmosferico')">
+                <i>⛑️</i><span>Control Atmosferico <b id="atmo-count" class="badge-count">0</b></span>
             </button>
-            <button class="menu-btn btn-operacional" onclick="alert('Módulo Offline próximamente')">
-                <i>⛑️</i><span>Control Mina</span>
+            <button class="menu-btn btn-verificacion" onclick="mostrarVista('view-verificacion')">
+                <i>🛡️</i><span>Verificación <b id="ver-count" class="badge-count">0</b></span>
             </button>
-            <button class="menu-btn btn-verificacion" onclick="alert('Módulo Offline próximamente')">
-                <i>🛡️</i><span>Verificación Herramientas</span>
-            </button>
-            <button class="menu-btn btn-capacitaciones" onclick="alert('Módulo Offline próximamente')">
-                <i>🎓</i><span>Capacitaciones</span>
-            </button>
-            <button class="menu-btn btn-charlas" onclick="alert('Módulo Offline próximamente')">
-                <i>📢</i><span>Charlas 5 min</span>
-            </button>
-            <button class="menu-btn btn-opt" onclick="alert('Módulo Offline próximamente')">
-                <i>👁️</i><span>OPT</span>
-            </button>
+            <button class="menu-btn btn-capacitaciones" onclick="alert('Próximamente')"><i>🎓</i><span>Capacitaciones</span></button>
+            <button class="menu-btn btn-charlas" onclick="alert('Próximamente')"><i>📢</i><span>Charlas 5 min</span></button>
+            <button class="menu-btn btn-opt" onclick="alert('Próximamente')"><i>👁️</i><span>OPT</span></button>
+        </div>
+    </div>
+
+    <div id="view-verificacion" class="view">
+        <button class="btn-main btn-back" onclick="mostrarVista('view-menu')">⬅ Volver al Menú</button>
+        <div class="card">
+            <h2 id="ver-form-title" style="text-align:center; color:var(--teal); font-size: 1.1rem; margin-top:0;">Nueva Verificación</h2>
+            
+            <div class="nav-group">
+                <button class="btn-nav" onclick="navegarVerificacion(-1)">◀ Ant.</button>
+                <button class="btn-nav btn-new-reg" style="background:var(--teal)" onclick="botonNuevaCabeceraVer()">✨ NUEVA CABECERA</button>
+                <button class="btn-nav" onclick="navegarVerificacion(1)">Sig. ▶</button>
+            </div>
+            <button class="btn-main" style="background:var(--success); font-size: 11px;" onclick="botonNuevoRegistroVer()">➕ NUEVO REGISTRO (Mismo Nombre)</button>
+
+            <input type="hidden" id="ver-edit-id">
+            <label>Nombre Cabecera de la Tarea</label>
+            <input type="text" id="ver-cabecera" placeholder="Nombre general del grupo">
+
+            <label>Tipo de Documento</label>
+            <select id="ver-tipo" onchange="toggleVerTar(this.value)">
+                <option>IPERC</option>
+                <option>PETAR</option>
+                <option>LISTA DE CHEQUEO</option>
+                <option>ATS</option>
+                <option value="TAR">TAR</option>
+            </select>
+
+            <div id="ver-tar-box" style="display:none; background:#fff9e6; padding:10px; border-radius:10px; margin-bottom:15px; border:1px solid #ffeeba;">
+                <label>¿Cuál TAR?</label>
+                <input type="text" id="ver-tar-cual" style="margin-bottom:0">
+            </div>
+
+            <label>Fecha y Hora (Automática)</label>
+            <input type="text" id="ver-fecha" readonly>
+
+            <label>Lugar</label>
+            <input type="text" id="ver-lugar">
+
+            <label>Supervisor o Jefe de Turno</label>
+            <input type="text" id="ver-supervisor">
+
+            <label>Nombre de quien diligenció</label>
+            <input type="text" id="ver-diligenciador">
+
+            <label>Diligenciado</label>
+            <div class="diligenciado-selector">
+                <div class="dil-opt dil-completo selected" id="dil-Completo" onclick="setVerDiligenciado('Completo')">COMPLETO</div>
+                <div class="dil-opt dil-parcial" id="dil-Parcial" onclick="setVerDiligenciado('Parcial')">PARCIAL</div>
+                <div class="dil-opt dil-vacio" id="dil-Vacio" onclick="setVerDiligenciado('Vacio')">VACÍO</div>
+            </div>
+            <input type="hidden" id="ver-diligenciado-val" value="Completo">
+
+            <label>Observación</label>
+            <textarea id="ver-obs" rows="2"></textarea>
+
+            <label>Inspector</label>
+            <input type="text" id="ver-inspector">
+
+            <label>Imágenes de Evidencia</label>
+            <input type="file" id="ver-fotos" accept="image/*" multiple onchange="previsualizarFotosVer()">
+            <div id="ver-galeria-fotos" class="preview-galeria"></div>
+
+            <button class="btn-main" style="background:var(--teal)" onclick="guardarVerificacion()">💾 GUARDAR REGISTRO</button>
+            <button id="ver-btn-eliminar" onclick="eliminarVerificacion()" style="display:none; background:none; color:var(--danger); border:1px solid var(--danger); width:100%; padding:10px; border-radius:10px; font-weight:bold;">🗑️ ELIMINAR REGISTRO</button>
         </div>
     </div>
 
@@ -113,28 +171,18 @@
         <button class="btn-main btn-back" onclick="mostrarVista('view-menu')">⬅ Volver al Menú</button>
         <div class="card">
             <h2 id="form-title" style="text-align:center; color:var(--primary); font-size: 1.1rem; margin-top:0;">Nueva Inspección</h2>
-            
             <div class="nav-group">
                 <button class="btn-nav" onclick="navegarRegistro(-1)">◀ Ant.</button>
                 <button class="btn-nav btn-new-reg" onclick="botonNuevo()">➕ NUEVO</button>
                 <button class="btn-nav" onclick="navegarRegistro(1)">Sig. ▶</button>
             </div>
-
             <input type="hidden" id="edit-id">
             <label>Inspector</label>
-            <input type="text" id="inspector" placeholder="Nombre">
-            
+            <input type="text" id="inspector">
             <label>Tipo</label>
-            <select id="tipo">
-                <option>Orden y limpieza</option>
-                <option>Locativa</option>
-                <option>Epp</option>
-                <option>Vehículos</option>
-            </select>
-
+            <select id="tipo"><option>Orden y limpieza</option><option>Locativa</option><option>Epp</option><option>Vehículos</option></select>
             <label>Lugar</label>
-            <input type="text" id="lugar" placeholder="Ubicación">
-
+            <input type="text" id="lugar">
             <label>Nivel de Riesgo</label>
             <div class="riesgo-selector">
                 <div class="riesgo-opt r-bajo selected" id="opt-Bajo" onclick="setRiesgo('Bajo')">BAJO</div>
@@ -142,44 +190,239 @@
                 <div class="riesgo-opt r-alto" id="opt-Alto" onclick="setRiesgo('Alto')">ALTO</div>
             </div>
             <input type="hidden" id="riesgo" value="Bajo">
-
             <label>Hallazgo</label>
             <textarea id="hallazgo" rows="2"></textarea>
-
             <label>Foto</label>
             <input type="file" id="foto" accept="image/*" capture="camera">
-
             <button class="btn-main btn-save" onclick="guardarLocal()">💾 GUARDAR</button>
             <button id="btn-eliminar" onclick="eliminarRegistro()" style="display:none; background:none; color:var(--danger); border:1px solid var(--danger); width:100%; padding:10px; border-radius:10px; font-weight:bold;">🗑️ ELIMINAR</button>
+        </div>
+    </div>
+
+    <div id="view-inventario" class="view">
+        <button class="btn-main btn-back" onclick="mostrarVista('view-menu')">⬅ Volver al Menú</button>
+        <div class="card">
+            <h2 id="inv-form-title" style="text-align:center; color:var(--purple); font-size: 1.1rem; margin-top:0;">Nuevo Inventario</h2>
+            <div class="nav-group">
+                <button class="btn-nav" onclick="navegarInventario(-1)">◀ Ant.</button>
+                <button class="btn-nav btn-new-reg" style="background:var(--purple)" onclick="botonNuevoInventario()">✨ NUEVO INVENTARIO</button>
+                <button class="btn-nav" onclick="navegarInventario(1)">Sig. ▶</button>
+            </div>
+            <button class="btn-main" style="background:var(--success); font-size: 11px;" onclick="botonNuevoRegistro()">➕ NUEVO REGISTRO (Mismo Nombre)</button>
+
+            <input type="hidden" id="inv-edit-id">
+            <label>Nombre General del Inventario</label>
+            <input type="text" id="inv-nombre" placeholder="Nombre del grupo">
+            <label>Fecha y Hora (Automático)</label>
+            <input type="text" id="inv-fecha" readonly>
+            <label>Concepto (Descripción)</label>
+            <textarea id="inv-concepto" rows="2"></textarea>
+            <label>Cantidad (Numérico)</label>
+            <input type="number" id="inv-cantidad">
+            <label>Estado del Elemento</label>
+            <div class="estado-selector">
+                <div class="estado-opt est-bueno selected" id="est-Bueno" onclick="setEstadoInv('Bueno')">BUENO</div>
+                <div class="estado-opt est-regular" id="est-Regular" onclick="setEstadoInv('Regular')">REGULAR</div>
+                <div class="estado-opt est-malo" id="est-Malo" onclick="setEstadoInv('Malo')">MALO</div>
+                <div class="estado-opt est-cambio" id="est-Cambio" onclick="setEstadoInv('Cambio')">CAMBIO</div>
+            </div>
+            <input type="hidden" id="inv-estado" value="Bueno">
+            <label>Fecha de Vencimiento</label>
+            <input type="date" id="inv-vencimiento">
+            <label>Inspector</label>
+            <input type="text" id="inv-inspector">
+            <label>Observación General</label>
+            <textarea id="inv-observacion" rows="2"></textarea>
+            <label>Imágenes de Evidencia</label>
+            <input type="file" id="inv-fotos" accept="image/*" multiple onchange="previsualizarFotos()">
+            <div id="galeria-fotos" class="preview-galeria"></div>
+
+            <button class="btn-main btn-save" style="background:var(--purple)" onclick="guardarInventario()">💾 GUARDAR REGISTRO</button>
+            <button id="inv-btn-eliminar" onclick="eliminarInventario()" style="display:none; background:none; color:var(--danger); border:1px solid var(--danger); width:100%; padding:10px; border-radius:10px; font-weight:bold;">🗑️ ELIMINAR REGISTRO</button>
+        </div>
+    </div>
+
+    <div id="view-control-atmosferico" class="view">
+        <button class="btn-main btn-back" onclick="mostrarVista('view-menu')">⬅ Volver al Menú</button>
+        <div class="card">
+            <h2 id="atmo-form-title" style="text-align:center; color:var(--pink); font-size: 1.1rem; margin-top:0;">Monitoreo Atmosférico</h2>
+            <div class="nav-group">
+                <button class="btn-nav" onclick="navegarAtmosferico(-1)">◀ Ant.</button>
+                <button class="btn-nav btn-new-reg" style="background:var(--pink)" onclick="botonNuevoAtmo()">➕ NUEVO</button>
+                <button class="btn-nav" onclick="navegarAtmosferico(1)">Sig. ▶</button>
+            </div>
+
+            <input type="hidden" id="atmo-edit-id">
+            <label>Fecha y Hora (Automático)</label>
+            <input type="text" id="atmo-fecha" readonly>
+            <label>Lugar / Frente de Trabajo</label>
+            <input type="text" id="atmo-lugar" placeholder="Ubicación exacta">
+
+            <h3 style="font-size: 12px; color: var(--secondary); border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 20px;">Concentración de Gases</h3>
+            <div class="gas-grid">
+                <div class="gas-field"><label>O₂ (%)</label><input type="number" id="atmo-o2" step="0.1" placeholder="20.9"></div>
+                <div class="gas-field"><label>CH₄ (% LEL)</label><input type="number" id="atmo-ch4" step="0.1" placeholder="0.0"></div>
+                <div class="gas-field"><label>CO (ppm)</label><input type="number" id="atmo-co" placeholder="0"></div>
+                <div class="gas-field"><label>CO₂ (%)</label><input type="number" id="atmo-co2" step="0.01" placeholder="0.03"></div>
+                <div class="gas-field"><label>NOₓ (ppm)</label><input type="number" id="atmo-nox" placeholder="0"></div>
+                <div class="gas-field"><label>H₂S (ppm)</label><input type="number" id="atmo-h2s" placeholder="0"></div>
+            </div>
+
+            <h3 style="font-size: 12px; color: var(--secondary); border-bottom: 1px solid #eee; padding-bottom: 5px;">Ventilación y Clima</h3>
+            <div class="gas-grid">
+                <div class="gas-field"><label>Vel. Aire (m/min)</label><input type="number" id="atmo-vel" placeholder="0"></div>
+                <div class="gas-field"><label>Temp. (°C)</label><input type="number" id="atmo-temp" step="0.1" placeholder="24"></div>
+            </div>
+
+            <label>Inspector / Responsable</label>
+            <input type="text" id="atmo-inspector">
+            <label>Observaciones / Acciones Tomadas</label>
+            <textarea id="atmo-obs" rows="2"></textarea>
+
+            <button class="btn-main" style="background:var(--pink)" onclick="guardarAtmosferico()">💾 GUARDAR MONITOREO</button>
+            <button id="atmo-btn-eliminar" onclick="eliminarAtmosferico()" style="display:none; background:none; color:var(--danger); border:1px solid var(--danger); width:100%; padding:10px; border-radius:10px; font-weight:bold;">🗑️ ELIMINAR REGISTRO</button>
         </div>
     </div>
 </div>
 
 <script>
-    let db, registros = [], indice = -1;
+    let db, registros = [], inventarios = [], atmosfericos = [], verificaciones = [], indice = -1, indiceInv = -1, indiceAtmo = -1, indiceVer = -1;
 
-    // 1. Iniciar DB Offline
-    const req = indexedDB.open("SST_Master_DB", 3);
+    // Inicialización DB
+    const req = indexedDB.open("SST_Master_DB", 10); 
     req.onupgradeneeded = e => {
-        e.target.result.createObjectStore("inspecciones", { keyPath: "id", autoIncrement: true });
+        let database = e.target.result;
+        if (!database.objectStoreNames.contains("inspecciones")) database.createObjectStore("inspecciones", { keyPath: "id", autoIncrement: true });
+        if (!database.objectStoreNames.contains("inventarios")) database.createObjectStore("inventarios", { keyPath: "id", autoIncrement: true });
+        if (!database.objectStoreNames.contains("control_atmosferico")) database.createObjectStore("control_atmosferico", { keyPath: "id", autoIncrement: true });
+        if (!database.objectStoreNames.contains("verificaciones")) database.createObjectStore("verificaciones", { keyPath: "id", autoIncrement: true });
     };
     req.onsuccess = e => { db = e.target.result; refrescarMemoria(); };
 
-    // 2. Lógica de Datos
     function refrescarMemoria() {
-        const store = db.transaction("inspecciones", "readonly").objectStore("inspecciones");
-        store.getAll().onsuccess = e => {
-            registros = e.target.result;
-            document.getElementById('sync-count').innerText = registros.length;
-            document.getElementById('sync-count').style.display = registros.length ? "inline" : "none";
-        };
+        if(!db) return;
+        const tx = db.transaction(["inspecciones", "inventarios", "control_atmosferico", "verificaciones"], "readonly");
+        tx.objectStore("inspecciones").getAll().onsuccess = e => { registros = e.target.result; document.getElementById('sync-count').innerText = registros.length; };
+        tx.objectStore("inventarios").getAll().onsuccess = e => { inventarios = e.target.result; document.getElementById('inv-count').innerText = inventarios.length; };
+        tx.objectStore("control_atmosferico").getAll().onsuccess = e => { atmosfericos = e.target.result; document.getElementById('atmo-count').innerText = atmosfericos.length; };
+        tx.objectStore("verificaciones").getAll().onsuccess = e => { verificaciones = e.target.result; document.getElementById('ver-count').innerText = verificaciones.length; };
     }
 
+    function mostrarVista(id) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
+        document.getElementById(id).classList.add('active-view');
+        const ahora = new Date().toLocaleString();
+        if(id === 'view-inventario' && indiceInv === -1) document.getElementById('inv-fecha').value = ahora;
+        if(id === 'view-control-atmosferico' && indiceAtmo === -1) document.getElementById('atmo-fecha').value = ahora;
+        if(id === 'view-verificacion' && indiceVer === -1) document.getElementById('ver-fecha').value = ahora;
+    }
+
+    // --- LÓGICA VERIFICACIÓN (ACTUALIZADA) ---
+    function toggleVerTar(v) { document.getElementById('ver-tar-box').style.display = (v === 'TAR') ? 'block' : 'none'; }
+    
+    function setVerDiligenciado(v) {
+        document.getElementById('ver-diligenciado-val').value = v;
+        document.querySelectorAll('.dil-opt').forEach(o => o.classList.remove('selected'));
+        document.getElementById('dil-' + v).classList.add('selected');
+    }
+
+    function botonNuevaCabeceraVer() {
+        indiceVer = -1; document.getElementById('ver-cabecera').value = ""; limpiarCamposVer();
+        document.getElementById('ver-form-title').innerText = "Nueva Verificación";
+        document.getElementById('ver-btn-eliminar').style.display = "none";
+    }
+
+    function botonNuevoRegistroVer() {
+        indiceVer = -1; const cab = document.getElementById('ver-cabecera').value;
+        if(!cab) { alert("Asigne Nombre de Cabecera primero"); return; }
+        limpiarCamposVer();
+        document.getElementById('ver-form-title').innerText = "Nuevo Registro en: " + cab;
+        document.getElementById('ver-btn-eliminar').style.display = "none";
+    }
+
+    function limpiarCamposVer() {
+        document.getElementById('ver-edit-id').value = "";
+        document.getElementById('ver-fecha').value = new Date().toLocaleString();
+        document.getElementById('ver-tipo').selectedIndex = 0; toggleVerTar('');
+        document.getElementById('ver-tar-cual').value = ""; document.getElementById('ver-lugar').value = "";
+        document.getElementById('ver-supervisor').value = ""; document.getElementById('ver-diligenciador').value = "";
+        document.getElementById('ver-obs').value = ""; setVerDiligenciado('Completo');
+        document.getElementById('ver-fotos').value = "";
+        document.getElementById('ver-galeria-fotos').innerHTML = "";
+    }
+
+    function previsualizarFotosVer() {
+        const galeria = document.getElementById('ver-galeria-fotos');
+        galeria.innerHTML = "";
+        Array.from(document.getElementById('ver-fotos').files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = e => { const img = document.createElement('img'); img.src = e.target.result; galeria.appendChild(img); };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function guardarVerificacion() {
+        const id = document.getElementById('ver-edit-id').value;
+        const cab = document.getElementById('ver-cabecera').value;
+        if(!cab) { alert("Nombre de Cabecera requerido"); return; }
+        
+        const files = document.getElementById('ver-fotos').files;
+        const listaFotos = [];
+        for (let file of files) {
+            const b64 = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(file); });
+            listaFotos.push(b64);
+        }
+
+        const data = {
+            cabecera: cab, tipo: document.getElementById('ver-tipo').value, tar_cual: document.getElementById('ver-tar-cual').value,
+            fecha: document.getElementById('ver-fecha').value, lugar: document.getElementById('ver-lugar').value,
+            supervisor: document.getElementById('ver-supervisor').value, diligenciador: document.getElementById('ver-diligenciador').value,
+            diligenciado: document.getElementById('ver-diligenciado-val').value, observacion: document.getElementById('ver-obs').value,
+            inspector: document.getElementById('ver-inspector').value
+        };
+        if(listaFotos.length) data.fotos = listaFotos;
+        if(id) data.id = parseInt(id);
+        
+        const tx = db.transaction("verificaciones", "readwrite");
+        tx.objectStore("verificaciones").put(data);
+        tx.oncomplete = () => { alert("Registro guardado"); refrescarMemoria(); botonNuevoRegistroVer(); };
+    }
+
+    function navegarVerificacion(dir) {
+        if (!verificaciones.length) return;
+        indiceVer = (indiceVer === -1) ? verificaciones.length - 1 : indiceVer + dir;
+        if (indiceVer < 0) indiceVer = 0; if (indiceVer >= verificaciones.length) indiceVer = verificaciones.length - 1;
+        const v = verificaciones[indiceVer];
+        document.getElementById('ver-form-title').innerText = "Registro #" + v.id;
+        document.getElementById('ver-edit-id').value = v.id;
+        document.getElementById('ver-cabecera').value = v.cabecera;
+        document.getElementById('ver-tipo').value = v.tipo; toggleVerTar(v.tipo);
+        document.getElementById('ver-tar-cual').value = v.tar_cual;
+        document.getElementById('ver-fecha').value = v.fecha;
+        document.getElementById('ver-lugar').value = v.lugar;
+        document.getElementById('ver-supervisor').value = v.supervisor;
+        document.getElementById('ver-diligenciador').value = v.diligenciador;
+        document.getElementById('ver-obs').value = v.observacion;
+        document.getElementById('ver-inspector').value = v.inspector;
+        setVerDiligenciado(v.diligenciado);
+        
+        const gal = document.getElementById('ver-galeria-fotos');
+        gal.innerHTML = "";
+        if(v.fotos) v.fotos.forEach(src => { const img = document.createElement('img'); img.src = src; gal.appendChild(img); });
+        
+        document.getElementById('ver-btn-eliminar').style.display = "block";
+    }
+
+    function eliminarVerificacion() {
+        const id = parseInt(document.getElementById('ver-edit-id').value);
+        if (confirm("¿Borrar registro?")) db.transaction("verificaciones", "readwrite").objectStore("verificaciones").delete(id).onsuccess = () => { botonNuevaCabeceraVer(); refrescarMemoria(); };
+    }
+
+    // --- LÓGICA INSPECCIONES ORIGINAL (MANTENIDA) ---
     async function guardarLocal() {
         const id = document.getElementById('edit-id').value;
         const fotoFile = document.getElementById('foto').files[0];
         let fotoData = "";
-
         if (fotoFile) {
             fotoData = await new Promise(r => {
                 const reader = new FileReader();
@@ -187,7 +430,6 @@
                 reader.readAsDataURL(fotoFile);
             });
         }
-
         const data = {
             inspector: document.getElementById('inspector').value,
             tipo: document.getElementById('tipo').value,
@@ -196,17 +438,11 @@
             hallazgo: document.getElementById('hallazgo').value,
             fecha: new Date().toLocaleString()
         };
-
         if(fotoData) data.foto = fotoData;
         if(id) data.id = parseInt(id);
-
         const tx = db.transaction("inspecciones", "readwrite");
         tx.objectStore("inspecciones").put(data);
-        tx.oncomplete = () => {
-            alert("Guardado offline con éxito");
-            botonNuevo();
-            refrescarMemoria();
-        };
+        tx.oncomplete = () => { alert("Guardado"); botonNuevo(); refrescarMemoria(); };
     }
 
     function navegarRegistro(dir) {
@@ -214,9 +450,8 @@
         indice = (indice === -1) ? registros.length - 1 : indice + dir;
         if (indice < 0) indice = 0;
         if (indice >= registros.length) indice = registros.length - 1;
-        
         const reg = registros[indice];
-        document.getElementById('form-title').innerText = "Viendo Registro #" + reg.id;
+        document.getElementById('form-title').innerText = "Registro #" + reg.id;
         document.getElementById('edit-id').value = reg.id;
         document.getElementById('inspector').value = reg.inspector;
         document.getElementById('tipo').value = reg.tipo;
@@ -228,43 +463,194 @@
 
     function eliminarRegistro() {
         const id = parseInt(document.getElementById('edit-id').value);
-        if (!confirm("¿Borrar este registro?")) return;
-        db.transaction("inspecciones", "readwrite").objectStore("inspecciones").delete(id).onsuccess = () => {
-            botonNuevo();
-            refrescarMemoria();
-        };
+        if (confirm("¿Borrar?")) db.transaction("inspecciones", "readwrite").objectStore("inspecciones").delete(id).onsuccess = () => { botonNuevo(); refrescarMemoria(); };
     }
 
-    // 3. UI Helpers
     function setRiesgo(v) {
         document.getElementById('riesgo').value = v;
         document.querySelectorAll('.riesgo-opt').forEach(o => o.classList.remove('selected'));
         document.getElementById('opt-' + v).classList.add('selected');
     }
 
-    function mostrarVista(id) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
-        document.getElementById(id).classList.add('active-view');
-    }
-
     function botonNuevo() {
-        indice = -1;
-        document.getElementById('edit-id').value = "";
-        document.getElementById('inspector').value = "";
-        document.getElementById('lugar').value = "";
-        document.getElementById('hallazgo').value = "";
-        document.getElementById('btn-eliminar').style.display = "none";
-        document.getElementById('form-title').innerText = "Nueva Inspección";
-        setRiesgo('Bajo');
+        indice = -1; document.getElementById('edit-id').value = ""; document.getElementById('inspector').value = "";
+        document.getElementById('lugar').value = ""; document.getElementById('hallazgo').value = "";
+        document.getElementById('btn-eliminar').style.display = "none"; setRiesgo('Bajo');
     }
 
+    // --- LÓGICA INVENTARIO ORIGINAL (MANTENIDA) ---
+    function botonNuevoInventario() {
+        indiceInv = -1;
+        document.getElementById('inv-nombre').value = "";
+        limpiarCamposRegistro();
+        document.getElementById('inv-form-title').innerText = "Nuevo Inventario";
+        document.getElementById('inv-btn-eliminar').style.display = "none";
+    }
+
+    function botonNuevoRegistro() {
+        indiceInv = -1;
+        const nombreActual = document.getElementById('inv-nombre').value;
+        if(!nombreActual) { alert("Asigne un Nombre General primero"); return; }
+        limpiarCamposRegistro();
+        document.getElementById('inv-form-title').innerText = "Nuevo Registro en: " + nombreActual;
+        document.getElementById('inv-btn-eliminar').style.display = "none";
+    }
+
+    function limpiarCamposRegistro() {
+        document.getElementById('inv-edit-id').value = "";
+        document.getElementById('inv-fecha').value = new Date().toLocaleString();
+        document.getElementById('inv-concepto').value = "";
+        document.getElementById('inv-cantidad').value = "";
+        document.getElementById('inv-vencimiento').value = "";
+        document.getElementById('inv-observacion').value = "";
+        document.getElementById('inv-fotos').value = "";
+        document.getElementById('galeria-fotos').innerHTML = "";
+        setEstadoInv('Bueno');
+    }
+
+    function previsualizarFotos() {
+        const galeria = document.getElementById('galeria-fotos');
+        galeria.innerHTML = "";
+        Array.from(document.getElementById('inv-fotos').files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = e => { const img = document.createElement('img'); img.src = e.target.result; galeria.appendChild(img); };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function guardarInventario() {
+        const id = document.getElementById('inv-edit-id').value;
+        const nombreGral = document.getElementById('inv-nombre').value;
+        if(!nombreGral) { alert("Nombre General requerido"); return; }
+        const files = document.getElementById('inv-fotos').files;
+        const listaFotos = [];
+        for (let file of files) {
+            const b64 = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(file); });
+            listaFotos.push(b64);
+        }
+        const data = {
+            nombre: nombreGral, fecha: document.getElementById('inv-fecha').value, concepto: document.getElementById('inv-concepto').value,
+            cantidad: document.getElementById('inv-cantidad').value, estado: document.getElementById('inv-estado').value,
+            vencimiento: document.getElementById('inv-vencimiento').value, inspector: document.getElementById('inv-inspector').value,
+            observacion: document.getElementById('inv-observacion').value
+        };
+        if(listaFotos.length) data.fotos = listaFotos;
+        if(id) data.id = parseInt(id);
+        const tx = db.transaction("inventarios", "readwrite");
+        tx.objectStore("inventarios").put(data);
+        tx.oncomplete = () => { alert("Registro guardado"); refrescarMemoria(); botonNuevoRegistro(); };
+    }
+
+    function navegarInventario(dir) {
+        if (!inventarios.length) return;
+        indiceInv = (indiceInv === -1) ? inventarios.length - 1 : indiceInv + dir;
+        if (indiceInv < 0) indiceInv = 0;
+        if (indiceInv >= inventarios.length) indiceInv = inventarios.length - 1;
+        const inv = inventarios[indiceInv];
+        document.getElementById('inv-form-title').innerText = "Registro #" + inv.id;
+        document.getElementById('inv-edit-id').value = inv.id;
+        document.getElementById('inv-nombre').value = inv.nombre;
+        document.getElementById('inv-fecha').value = inv.fecha;
+        document.getElementById('inv-concepto').value = inv.concepto;
+        document.getElementById('inv-cantidad').value = inv.cantidad;
+        document.getElementById('inv-vencimiento').value = inv.vencimiento;
+        document.getElementById('inv-inspector').value = inv.inspector;
+        document.getElementById('inv-observacion').value = inv.observacion;
+        setEstadoInv(inv.estado);
+        const gal = document.getElementById('galeria-fotos');
+        gal.innerHTML = "";
+        if(inv.fotos) inv.fotos.forEach(src => { const img = document.createElement('img'); img.src = src; gal.appendChild(img); });
+        document.getElementById('inv-btn-eliminar').style.display = "block";
+    }
+
+    function eliminarInventario() {
+        const id = parseInt(document.getElementById('inv-edit-id').value);
+        if (confirm("¿Borrar?")) db.transaction("inventarios", "readwrite").objectStore("inventarios").delete(id).onsuccess = () => { botonNuevoInventario(); refrescarMemoria(); };
+    }
+
+    function setEstadoInv(v) {
+        document.getElementById('inv-estado').value = v;
+        document.querySelectorAll('.estado-opt').forEach(o => o.classList.remove('selected'));
+        document.getElementById('est-' + v).classList.add('selected');
+    }
+
+    // --- LÓGICA CONTROL ATMOSFÉRICO ORIGINAL (MANTENIDA) ---
+    function botonNuevoAtmo() {
+        indiceAtmo = -1;
+        document.getElementById('atmo-edit-id').value = "";
+        document.getElementById('atmo-fecha').value = new Date().toLocaleString();
+        document.getElementById('atmo-lugar').value = "";
+        document.getElementById('atmo-o2').value = "";
+        document.getElementById('atmo-ch4').value = "";
+        document.getElementById('atmo-co').value = "";
+        document.getElementById('atmo-co2').value = "";
+        document.getElementById('atmo-nox').value = "";
+        document.getElementById('atmo-h2s').value = "";
+        document.getElementById('atmo-vel').value = "";
+        document.getElementById('atmo-temp').value = "";
+        document.getElementById('atmo-inspector').value = "";
+        document.getElementById('atmo-obs').value = "";
+        document.getElementById('atmo-btn-eliminar').style.display = "none";
+        document.getElementById('atmo-form-title').innerText = "Nuevo Monitoreo";
+    }
+
+    async function guardarAtmosferico() {
+        const id = document.getElementById('atmo-edit-id').value;
+        const data = {
+            fecha: document.getElementById('atmo-fecha').value,
+            lugar: document.getElementById('atmo-lugar').value,
+            o2: document.getElementById('atmo-o2').value,
+            ch4: document.getElementById('atmo-ch4').value,
+            co: document.getElementById('atmo-co').value,
+            co2: document.getElementById('atmo-co2').value,
+            nox: document.getElementById('atmo-nox').value,
+            h2s: document.getElementById('atmo-h2s').value,
+            vel: document.getElementById('atmo-vel').value,
+            temp: document.getElementById('atmo-temp').value,
+            inspector: document.getElementById('atmo-inspector').value,
+            observaciones: document.getElementById('atmo-obs').value
+        };
+        if(id) data.id = parseInt(id);
+        const tx = db.transaction("control_atmosferico", "readwrite");
+        tx.objectStore("control_atmosferico").put(data);
+        tx.oncomplete = () => { alert("Monitoreo guardado"); botonNuevoAtmo(); refrescarMemoria(); mostrarVista('view-menu'); };
+    }
+
+    function navegarAtmosferico(dir) {
+        if (!atmosfericos.length) return;
+        indiceAtmo = (indiceAtmo === -1) ? atmosfericos.length - 1 : indiceAtmo + dir;
+        if (indiceAtmo < 0) indiceAtmo = 0;
+        if (indiceAtmo >= atmosfericos.length) indiceAtmo = atmosfericos.length - 1;
+        const reg = atmosfericos[indiceAtmo];
+        document.getElementById('atmo-form-title').innerText = "Monitoreo #" + reg.id;
+        document.getElementById('atmo-edit-id').value = reg.id;
+        document.getElementById('atmo-fecha').value = reg.fecha;
+        document.getElementById('atmo-lugar').value = reg.lugar;
+        document.getElementById('atmo-o2').value = reg.o2;
+        document.getElementById('atmo-ch4').value = reg.ch4;
+        document.getElementById('atmo-co').value = reg.co;
+        document.getElementById('atmo-co2').value = reg.co2;
+        document.getElementById('atmo-nox').value = reg.nox;
+        document.getElementById('atmo-h2s').value = reg.h2s;
+        document.getElementById('atmo-vel').value = reg.vel;
+        document.getElementById('atmo-temp').value = reg.temp;
+        document.getElementById('atmo-inspector').value = reg.inspector;
+        document.getElementById('atmo-obs').value = reg.observaciones;
+        document.getElementById('atmo-btn-eliminar').style.display = "block";
+    }
+
+    function eliminarAtmosferico() {
+        const id = parseInt(document.getElementById('atmo-edit-id').value);
+        if (confirm("¿Borrar?")) db.transaction("control_atmosferico", "readwrite").objectStore("control_atmosferico").delete(id).onsuccess = () => { botonNuevoAtmo(); refrescarMemoria(); };
+    }
+
+    // --- ESTADO DE RED ---
     function actualizarEstado() {
         const s = document.getElementById('status');
         const on = navigator.onLine;
         s.className = on ? "online" : "offline";
-        s.innerHTML = on ? "● CONECTADO (Sincronización lista)" : "● MODO OFFLINE (Guardando en memoria local)";
+        s.innerHTML = on ? "● CONECTADO" : "● MODO OFFLINE";
     }
-
     window.addEventListener('online', actualizarEstado);
     window.addEventListener('offline', actualizarEstado);
     actualizarEstado();
